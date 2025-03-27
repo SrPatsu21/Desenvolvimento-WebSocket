@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rastreamento do Pedido</title>
+</head>
+<body>
+    <h2>Status do Pedido</h2>
+    <p id="status">Clique em "Iniciar Pedido"</p>
+
+    <button onclick="startOrder()">Iniciar Pedido</button>
+    <button onclick="cancelOrder()" disabled id="cancelBtn">Cancelar Pedido</button>
+
+    <script>
+        let ws;
+        const orderId = Math.floor(Math.random()*1000); // ID do pedido
+
+        function startOrder() {
+            if (ws) {
+                ws.close(); // Fecha conexão anterior, se houver
+            }
+
+            ws = new WebSocket(`ws://${window.location.host}`);
+
+            ws.onopen = () => {
+                console.log("Conectado ao WebSocket");
+                ws.send(JSON.stringify({ type: "subscribe", orderId }));
+                document.getElementById("status").innerText = "Pedido iniciado...";
+                document.getElementById("cancelBtn").disabled = false;
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                document.getElementById("status").innerText = `Status: ${data.status}`;
+            };
+
+            ws.onclose = () => {
+                console.log("Conexão fechada");
+                document.getElementById("status").innerText = "Conexão perdida";
+                document.getElementById("cancelBtn").disabled = true;
+            };
+        }
+
+        function cancelOrder() {
+            if (ws) {
+                ws.send(JSON.stringify({ type: "cancel", orderId }));
+                ws.close();
+            }
+        }
+    </script>
+</body>
+</html>
