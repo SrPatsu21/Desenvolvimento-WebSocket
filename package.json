@@ -10,7 +10,10 @@
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node ./src/server.js"
+    "start": "node ./srcWebSocket/server.js",
+    "socket": "node ./srcWebSocket/server.js",
+    "polling": "node ./srcPolling/server.js"
+
   },
   "author": "",
   "license": "MIT"

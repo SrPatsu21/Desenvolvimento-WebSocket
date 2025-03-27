@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rastreamento do Pedido</title>
+    <style>
+        /* Estilo geral */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f8f1e4; /* Fundo bege, estilo restaurante */
+            padding: 20px;
+        }
+
+        h2 {
+            color: #d35400; /* Laranja queimado */
+        }
+
+        /* Caixa de status */
+        #status {
+            font-size: 1.2em;
+            font-weight: bold;
+            padding: 10px;
+            background: #fff3cd; /* Amarelo claro */
+            border: 2px solid #ffa502; /* Laranja */
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        /* Botões */
+        button {
+            font-size: 1em;
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        #startBtn {
+            background-color: #27ae60; /* Verde */
+            color: white;
+        }
+
+        #cancelBtn {
+            background-color: #c0392b; /* Vermelho */
+            color: white;
+        }
+
+        /* Botão desativado */
+        #cancelBtn:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+
+        /* Barra de progresso do pedido */
+        #progressBarContainer {
+            width: 60%;
+            margin: 20px auto;
+            background: #ddd;
+            border-radius: 20px;
+            overflow: hidden;
+            display: none;
+        }
+
+        #progressBar {
+            width: 0%;
+            height: 20px;
+            background: #27ae60;
+            text-align: center;
+            color: white;
+            line-height: 20px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <h2>📦 Rastreamento do Pedido</h2>
+    <p id="status">Clique em "Iniciar Pedido"</p>
+
+    <!-- Barra de progresso do status -->
+    <div id="progressBarContainer">
+        <div id="progressBar">0%</div>
+    </div>
+
+    <button id="startBtn" onclick="startOrder()">Iniciar Pedido</button>
+    <button id="cancelBtn" onclick="cancelOrder()" disabled>Cancelar Pedido</button>
+
+    <script>
+        let orderId;
+        let pollingInterval;
+        const statusList = ["Pedido recebido", "Em preparação", "Saiu para entrega", "Entregue"];
+
+        // Inicia o pedido e configura o polling
+        function startOrder() {
+            fetch('/order', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    orderId = data.orderId;
+                    document.getElementById("status").innerText = "Pedido iniciado...";
+                    document.getElementById("cancelBtn").disabled = false;
+                    document.getElementById("progressBarContainer").style.display = "block";
+                    updateProgressBar(0);
+                    pollingInterval = setInterval(getStatus, 1000);
+                })
+                .catch(error => console.error("Erro ao iniciar pedido:", error));
+        }
+
+        // Busca o status do pedido
+        function getStatus() {
+            fetch(`/order/${orderId}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("status").innerText = `Status: ${data.status}`;
+                    let index = statusList.indexOf(data.status);
+                    if (index !== -1) {
+                        updateProgressBar((index + 1) * 25);
+                    }
+                    // Se o pedido estiver concluído ou cancelado, encerra o polling
+                    if (data.status === "Entregue" || data.status === "Pedido cancelado") {
+                        clearInterval(pollingInterval);
+                        document.getElementById("cancelBtn").disabled = true;
+                    }
+                })
+                .catch(error => console.error("Erro ao obter status:", error));
+        }
+
+        // Cancela o pedido e encerra o polling
+        function cancelOrder() {
+            fetch(`/order/${orderId}/cancel`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("status").innerText = `Status: ${data.status}`;
+                    clearInterval(pollingInterval);
+                    document.getElementById("cancelBtn").disabled = true;
+                })
+                .catch(error => console.error("Erro ao cancelar pedido:", error));
+        }
+
+        // Atualiza a barra de progresso
+        function updateProgressBar(percent) {
+            document.getElementById("progressBar").style.width = percent + "%";
+            document.getElementById("progressBar").innerText = percent + "%";
+        }
+    </script>
+</body>
+</html>
