@@ -4,17 +4,100 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rastreamento do Pedido</title>
+    <style>
+        /* Estilo geral */
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f8f1e4; /* Fundo bege, estilo restaurante */
+            padding: 20px;
+        }
+
+        h2 {
+            color: #d35400; /* Laranja queimado */
+        }
+
+        /* Caixa de status */
+        #status {
+            font-size: 1.2em;
+            font-weight: bold;
+            padding: 10px;
+            background: #fff3cd; /* Amarelo claro */
+            border: 2px solid #ffa502; /* Laranja */
+            border-radius: 8px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        /* Botões */
+        button {
+            font-size: 1em;
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            opacity: 0.8;
+        }
+
+        #startBtn {
+            background-color: #27ae60; /* Verde */
+            color: white;
+        }
+
+        #cancelBtn {
+            background-color: #c0392b; /* Vermelho */
+            color: white;
+        }
+
+        /* Desativado */
+        #cancelBtn:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+        }
+
+        /* Barra de progresso do pedido */
+        #progressBarContainer {
+            width: 60%;
+            margin: 20px auto;
+            background: #ddd;
+            border-radius: 20px;
+            overflow: hidden;
+            display: none;
+        }
+
+        #progressBar {
+            width: 0%;
+            height: 20px;
+            background: #27ae60;
+            text-align: center;
+            color: white;
+            line-height: 20px;
+            font-size: 0.9em;
+        }
+    </style>
 </head>
 <body>
-    <h2>Status do Pedido</h2>
+    <h2>📦 Rastreamento do Pedido</h2>
     <p id="status">Clique em "Iniciar Pedido"</p>
 
-    <button onclick="startOrder()">Iniciar Pedido</button>
+    <!-- Barra de progresso do status -->
+    <div id="progressBarContainer">
+        <div id="progressBar">0%</div>
+    </div>
+
+    <button onclick="startOrder()" id="startBtn">Iniciar Pedido</button>
     <button onclick="cancelOrder()" disabled id="cancelBtn">Cancelar Pedido</button>
 
     <script>
         let ws;
-        const orderId = Math.floor(Math.random()*1000); // ID do pedido
+        const orderId = Math.floor(Math.random() * 1000); // ID do pedido
+        const statusList = ["Pedido recebido", "Em preparação", "Saiu para entrega", "Entregue"];
+        let currentStatusIndex = 0;
 
         function startOrder() {
             if (ws) {
@@ -28,11 +111,20 @@
                 ws.send(JSON.stringify({ type: "subscribe", orderId }));
                 document.getElementById("status").innerText = "Pedido iniciado...";
                 document.getElementById("cancelBtn").disabled = false;
+                document.getElementById("progressBarContainer").style.display = "block"; // Exibe barra de progresso
+                updateProgressBar(0); // Inicia a barra de progresso
             };
 
             ws.onmessage = (event) => {
                 const data = JSON.parse(event.data);
                 document.getElementById("status").innerText = `Status: ${data.status}`;
+
+                // Atualiza barra de progresso conforme o status avança
+                const newIndex = statusList.indexOf(data.status);
+                if (newIndex > currentStatusIndex) {
+                    currentStatusIndex = newIndex;
+                    updateProgressBar((newIndex + 1) * 25);
+                }
             };
 
             ws.onclose = () => {
@@ -47,6 +139,11 @@
                 ws.send(JSON.stringify({ type: "cancel", orderId }));
                 ws.close();
             }
+        }
+
+        function updateProgressBar(percent) {
+            document.getElementById("progressBar").style.width = percent + "%";
+            document.getElementById("progressBar").innerText = percent + "%";
         }
     </script>
 </body>
