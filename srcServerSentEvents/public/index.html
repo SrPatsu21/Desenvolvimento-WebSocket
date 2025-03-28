@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vote Counter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            margin: auto;
+        }
+
+        .buttons {
+            margin: 20px 0;
+        }
+
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Vote for your favorite option!</h1>
+        <div class="buttons">
+            <button onclick="vote('optionA')">Vote A</button>
+            <button onclick="vote('optionB')">Vote B</button>
+        </div>
+        <h2>Votes:</h2>
+        <p>Option A: <span id="optionA">0</span></p>
+        <p>Option B: <span id="optionB">0</span></p>
+    </div>
+    <script>
+        const eventSource = new EventSource('/votes');
+        eventSource.onmessage = (event) => {
+            const votes = JSON.parse(event.data);
+            document.getElementById('optionA').textContent = votes.optionA;
+            document.getElementById('optionB').textContent = votes.optionB;
+        };
+
+        function vote(option) {
+            fetch('/vote', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `option=${option}`
+            });
+        }
+    </script>
+</body>
+</html>
